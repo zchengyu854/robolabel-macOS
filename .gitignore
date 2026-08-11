@@ -15,3 +15,4 @@ dist-x86/
 .reasonix/
 .idea/
 .vscode/
+.gitignore
