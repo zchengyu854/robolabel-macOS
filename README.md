@@ -1,6 +1,6 @@
 # robolabel
 
-轻量级 RoboInter 风格的机器人操作视频标注工具（PyQt5 桌面应用），用于对 LeRobot 2.1 / CoRobot 数据集的机器人任务视频进行结构化标注。
+轻量级 RoboInter 风格的**机器人操作视频标注工具**（PyQt5 桌面应用），用于对 LeRobot 2.1 / CoRobot 数据集的机器人任务视频进行结构化标注。界面中英双语，支持 macOS 一键打包为双击即用的 `.app`。
 
 ## 功能特性
 
@@ -9,23 +9,16 @@
 - **片段（subtask）标注**：帧区间、状态（normal / abnormal）、片段技能、双手协调模式
 - **细粒度 phase 标注**：每个 subtask 内可细分 approach / grasp / lift / release 等阶段
 - **数据集级技能库**：可复用、可增删的片段技能模板库
-- **严格 schema 校验**：帧区间必须无缝拼接覆盖整个视频，模板文本一致性校验，错误提示为中文
+- **严格 schema 校验**：帧区间无缝拼接覆盖整个视频、模板文本一致性校验，错误提示为中文
 - **标准格式导入导出**：与 `annotation_schema_v1.json` 双向转换，支持 human / hybrid 标注来源标记
-- **中英双语界面**，支持 HiDPI 缩放（可通过 `ROBOLABEL_UI_SCALE` 调整）
+- **中英双语界面**，支持 HiDPI 缩放（`ROBOLABEL_UI_SCALE` 可调）
 - **命令行迁移工具**：`tools/` 下历史标注导入与区间格式转换
 
-## 环境要求
+## 快速开始
 
-- Python 3.9 – 3.13（PyQt5 官方 wheel 不再支持更新的 Python 版本）
-- `ffmpeg` / `ffprobe` 并在 PATH 中（OpenCV 无法解码的部分编码需要回退到 ffmpeg 解码）
+### 1. 安装依赖
 
-macOS 安装 ffmpeg：
-
-```bash
-brew install ffmpeg
-```
-
-## 安装
+要求：Python 3.9–3.13（PyQt5 官方 wheel 上限）、`ffmpeg` / `ffprobe` 在 PATH 中（OpenCV 无法解码的编码回退到 ffmpeg 解码；macOS 上 `brew install ffmpeg`）。
 
 ```bash
 python3 -m venv .venv
@@ -33,57 +26,90 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## 从源码运行
+### 2. 从源码运行
 
 ```bash
 python -m lite_annotator.app
 ```
 
-可选：调整界面缩放：
+可选：调整界面缩放：`ROBOLABEL_UI_SCALE=1.2 python -m lite_annotator.app`
+
+### 3. 运行测试
 
 ```bash
-ROBOLABEL_UI_SCALE=1.2 python -m lite_annotator.app
-```
-
-## 运行测试
-
-```bash
+pip install pytest        # 测试依赖（不在 requirements.txt 内）
 python -m pytest tests
 ```
 
-## 打包可执行文件（macOS .app）
+### 4. 打包 macOS .app（双击即用，Apple Silicon + Intel）
+
+产物 `dist/robolabel.app` 为 **universal2 双架构**（arm64 + x86_64），Apple Silicon 与 Intel Mac 都能直接运行。
 
 ```bash
+# 首次构建前：获取 universal2 Python（下载并解包 python.org 安装包，无需 sudo）
+./scripts/get_universal_python.sh
+
+# 构建（自动完成双架构 PyInstaller 打包 → lipo 合并 → ad-hoc 签名）
 ./scripts/build_macos.sh
 ```
 
-生成产物：
+产物：`dist/robolabel.app`（约 360MB）。构建会生成 arm64 / x86_64 两个构建 venv（`build-venv-*/`，已加入 .gitignore）。
 
-```text
-dist/robolabel.app
+> **架构说明**：因 numpy / opencv-python 等不提供 universal2 wheel，构建采用"两架构解释器分别打包 + lipo 合并"方案（`scripts/merge_universal.py`），无需在 Intel 机器上重复构建。
+>
+> **分发说明**：ad-hoc 签名仅保证本机可用。拷贝到其他 Mac 会触发 Gatekeeper 拦截，首次需右键 → "打开"；公网分发建议 Developer ID 签名 + `notarytool` 公证（详见 `docs/macos-packaging-plan.md`）。
+
+## 界面布局
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ 工具栏: [打开数据集] [保存标注] [导出JSON] [检查]                   │
+├──────────────┬──────────────────────────┬─────────────────────────┤
+│  视频播放器   │  数据条目列表             │  任务描述                │
+│  (多相机)     │  片段(subtask)编辑器      │  场景表单                │
+│              │                          │  片段技能展示(技能库)     │
+│              │                          │  检查结果                │
+└──────────────┴──────────────────────────┴─────────────────────────┘
 ```
 
-构建脚本会自动对产物做 ad-hoc 签名（`codesign --force --deep -s -`），本机双击即可打开界面。拷贝到其他 macOS 机器仍可能触发 Gatekeeper 拦截（未公证），首次需右键 → "打开"；公网分发建议用 Developer ID 签名 + `notarytool` 公证，详见 `docs/macos-packaging-plan.md`。其他平台请在目标平台构建。
+三栏比例 0 : 2 : 3：左栏视频播放器（固定宽度）、中栏数据条目 + 片段编辑器、右栏任务描述 + 场景 + 技能库 + 校验结果。
+
+## 标注工作流
+
+1. **打开数据集** → 自动识别 LeRobot / CoRobot 布局，选择 1~3 个相机并指定主相机
+2. **场景标注** → 填任务描述、任务类型、空间，添加物品（名称 / 颜色 / 材质 / affordance）
+3. **技能片段标注** → 先建片段技能模板存入技能库 → 播放视频设起止帧 → 选择技能 / 协调模式 → 可选做 phase 级细分
+4. **校验 / 保存 / 导出** → 实时校验（帧区间连续性、模板一致性等），通过后保存并导出标准格式 JSON，人工确认后标注来源标记为 human / hybrid
 
 ## 项目结构
 
 ```
 robolabel/
-├── lite_annotator/      # 主应用（PyQt5 GUI）
-├── common/              # 核心数据模型与校验（无 GUI 依赖）
-│   └── skill_schema.py  # 标注 schema、模板渲染、校验逻辑
-├── config/              # 标注模板与词表
-├── tests/               # pytest 测试（校验、导出、编辑器等）
-├── tools/               # 命令行迁移工具
-├── requirements.txt     # 依赖清单
-└── robolabel.spec       # PyInstaller 打包配置
+├── lite_annotator/       # 主应用（PyQt5 GUI）
+├── common/               # 核心数据模型与校验（无 GUI 依赖）
+│   └── skill_schema.py   # 标注 schema、模板渲染、校验逻辑
+├── config/               # 标注模板与词表（随包分发）
+├── assets/               # 应用图标（app.icns）
+├── scripts/              # macOS 构建工具链
+│   ├── build_macos.sh              # universal2 .app 一键打包（双架构构建+lipo合并+签名）
+│   ├── get_universal_python.sh     # 下载解包 python.org universal2 Python（无需 sudo）
+│   ├── merge_universal.py          # arm64/x86_64 两个 .app 的 lipo 合并脚本
+│   └── patch_pyinstaller_dyld.py   # PyInstaller 子进程 DYLD 环境补丁（解包 python 场景）
+├── tests/                # pytest 测试
+├── tools/                # 命令行迁移工具
+├── docs/
+│   └── macos-packaging-plan.md  # macOS 打包重构计划与实施记录
+├── requirements.txt
+├── robolabel.spec        # PyInstaller 打包配置（.app）
+└── robolabel-onefile.spec  # 回退方案：旧版单文件打包
 ```
 
 ### `lite_annotator/` — GUI 层
 
 | 文件 | 职责 |
 | --- | --- |
-| `app.py` / `main_window.py` | 入口 + 主窗口，三栏布局：视频播放器 / 数据条目列表 + subtask 编辑器 / 任务描述 + 场景表单 + 技能库 |
+| `app.py` / `main_window.py` | 入口 + 主窗口（三栏布局；macOS 下自动注入 Homebrew PATH、日志落盘） |
+| `paths.py` | `resource_path()`：源码 / 打包环境下定位只读资源 |
 | `multi_video_player.py` | 多相机视频播放器（最多 3 路共用时间轴），带 subtask 时间条和 phase 信息面板 |
 | `video_player.py` / `video_decode.py` | 单相机播放器；OpenCV 帧读取，失败自动回退到 ffmpeg 解码 |
 | `segment_editor.py` | subtask 编辑器：帧范围、状态（normal/abnormal）、技能选择、phase 标注对话框 |
@@ -120,9 +146,11 @@ robolabel/
 - `import_legacy_human_annotations.py`：把历史人工标注导入为标准格式
 - `convert_closed_intervals_to_half_open.py`：闭区间标注批量转半开区间（转换前自动备份）
 
-## 标注工作流
+## 常见问题
 
-1. **打开数据集** → 自动识别 LeRobot / CoRobot 布局，选择 1~3 个相机并指定主相机
-2. **场景标注** → 填任务描述、任务类型、空间，添加物品（名称 / 颜色 / 材质 / affordance）
-3. **技能片段标注** → 先建片段技能模板存入技能库 → 播放视频设起止帧 → 选择技能 / 协调模式 → 可选做 phase 级细分
-4. **校验 / 保存 / 导出** → 实时校验（帧区间连续性、模板一致性等），通过后保存并导出标准格式 JSON，人工确认后标注来源标记为 human / hybrid
+| 问题 | 解决 |
+| --- | --- |
+| 打包后的 `.app` 在其他 Mac 打不开 | Gatekeeper 拦截：右键 → "打开" 一次；公网分发请做签名 + 公证（见 `docs/macos-packaging-plan.md`） |
+| Intel Mac 能否运行 | 可以：产物为 universal2（arm64 + x86_64）双架构 |
+| 某视频无法解码 | OpenCV 解不了该编码，需要 ffmpeg 兜底：macOS `brew install ffmpeg`；`.app` 启动时已自动注入 Homebrew PATH |
+| 界面文字模糊 | Retina 屏已启用 HiDPI；仍不满意可用 `ROBOLABEL_UI_SCALE` 微调缩放 |

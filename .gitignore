@@ -9,6 +9,9 @@ dist/
 *.spec.bak
 .DS_Store
 .venv/
+build-venv-*/
+dist-arm64/
+dist-x86/
 .reasonix/
 .idea/
 .vscode/

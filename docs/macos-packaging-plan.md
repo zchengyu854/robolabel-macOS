@@ -352,3 +352,19 @@ robolabel/
 - bundle 布局：`Contents/MacOS/robolabel`（bootloader）+ `Contents/Frameworks/`（Python3/PyQt5/cv2/config 6 个配置）+ `Contents/Resources/app.icns`
 
 **待办（未做，按计划属可选增强）**：ffmpeg 内嵌（方案 B，需 GPL 许可评估）、正式设计稿图标（当前为占位 "RL" 图标）、Developer ID + notarization 公证（需开发者账号）。
+
+### 7.1 追加：universal2 双架构（2026-08-11）
+
+需求：产物不锁定架构，Apple Silicon 与 Intel Mac 均可运行。
+
+**可行性调研结论**：numpy / opencv-python 等主流包**不提供 universal2 wheel**（numpy 仅 1.22 之前、opencv/pyyaml 完全没有），PyInstaller `--target-arch universal2` 只合并 bootloader，第三方 `.so` 仍需 universal2 → 方案 A（universal2 Python + universal2 依赖）不可行。
+
+**落地方案（双构建 + lipo 合并）**：
+
+1. `scripts/get_universal_python.sh`：从华为云镜像下载 python.org universal2 Python 3.12.10 pkg，`pkgutil --expand-full` 解包（无需 sudo），软链出 `Python.framework`；运行时需 `DYLD_FRAMEWORK_PATH` + `DYLD_LIBRARY_PATH`（解包内 OpenSSL）。
+2. 两个 venv：`build-venv-arm64`（原生）+ `build-venv-x86`（`arch -x86_64` 下创建，Rosetta），依赖版本以 arm64 freeze 对齐。
+3. spec 通过 `ROBOLABEL_TARGET_ARCH` 环境变量控制 `EXE(target_arch=...)`（`--target-architecture` 不能与 .spec 同用）。
+4. 两次 PyInstaller onedir 构建（`--distpath dist-arm64/dist-x86`）→ `scripts/merge_universal.py` 以 arm64 版为基底，对每个非 fat 的 Mach-O 执行 `lipo -create` 合并（Qt/Python.framework 本身 universal2 则保留）→ 从内到外 ad-hoc 签名。
+5. `scripts/patch_pyinstaller_dyld.py`：PyInstaller 隔离子进程只经 `arch -e` 传播 `DYLD_LIBRARY_PATH`，不传 `DYLD_FRAMEWORK_PATH`，解包 python 场景下子进程加载解释器必崩；该脚本幂等地补齐传播。
+
+**验证**：bootloader 与 cv2/numpy/yaml/PyQt5/QtCore 全部为 `x86_64 arm64` fat；arm64 `open` 双击启动 OK；`arch -x86_64` 直跑 bootloader（Rosetta 模拟 Intel）启动 OK；pytest 53 passed；`codesign --verify` 通过。产物 `dist/robolabel.app` 约 360MB（双架构体积）。

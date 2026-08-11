@@ -1,8 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
 from pathlib import Path
 
 ROOT = Path.cwd()
+
+# universal2 双架构构建时通过环境变量指定目标架构（arm64 / x86_64）
+TARGET_ARCH = os.environ.get("ROBOLABEL_TARGET_ARCH")
 
 config_files = [
     "coordination_modes.yaml",
@@ -50,7 +54,7 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=True,
-    target_arch=None,
+    target_arch=TARGET_ARCH,
     codesign_identity=None,
     entitlements_file=None,
 )
