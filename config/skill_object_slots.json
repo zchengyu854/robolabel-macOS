@@ -1,0 +1,11 @@
+{
+  "object_slots": [
+    "manipulated_object",
+    "interaction_target",
+    "changed_object",
+    "source_container",
+    "destination_container",
+    "support_surface",
+    "tool"
+  ]
+}

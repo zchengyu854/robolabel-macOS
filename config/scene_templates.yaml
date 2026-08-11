@@ -1,0 +1,105 @@
+scene_template_version: scene_templates_v1
+template_id: scene_basic_v1
+
+template: "In [space] at [anchor], [main_objects] are located at [support_or_region], [object_states], [other_objects] are visible."
+ui_template: "在 [space] 的 [anchor] 处，[main_objects] 位于 [support_or_region]，[object_states]，[other_objects] 可见。"
+
+required_slots:
+  - space
+  - anchor
+  - main_objects
+  - support_or_region
+  - object_states
+  - other_objects
+
+slot_display_names:
+  space: 大空间/房间
+  anchor: 场景锚点
+  main_objects: 主要物体
+  support_or_region: 支撑物/区域
+  object_states: 物体状态
+  other_objects: 其他可见物体
+
+enum_constraints:
+  task_type:
+    - "object_rearrangement"
+    - "deformable_object_arrangement"
+    - "container_content_transfer"
+    - "tool_based_manipulation"
+    - "surface_cleaning"
+    - "fixture_operation"
+    - "device_operation"
+    - "insertion_assembly"
+    - "packing_unpacking"
+    - "food_or_liquid_preparation"
+    - "object_disposal"
+    - "navigation_only"
+  affordance:
+    - "graspable"
+    - "pushable"
+    - "pullable"
+    - "pressable"
+    - "rotatable"
+    - "pourable"
+    - "receivable"
+    - "cuttable"
+    - "support_surface"
+    - "slidable"
+    - "insertable"
+    - "insert_slot"
+    - "foldable"
+    - "deformable"
+    - "shakeable"
+    - "strikeable"
+    - "throwable"
+    - "tool_usable"
+    - "hangable"
+    - "openable"
+    - "closable"
+    - "wipeable"
+    - "scrubbable"
+
+enum_display_names:
+  task_type:
+    "object_rearrangement": "物体整理、移动、归位"
+    "deformable_object_arrangement": "软物体整理"
+    "container_content_transfer": "容器内容物转移"
+    "tool_based_manipulation": "使用工具作用于目标"
+    "surface_cleaning": "表面清洁"
+    "fixture_operation": "操作固定装置"
+    "device_operation": "操作设备/按钮/开关"
+    "insertion_assembly": "插入、装配、对接"
+    "packing_unpacking": "装入/取出/收纳"
+    "food_or_liquid_preparation": "食物/液体处理"
+    "object_disposal": "丢弃、投放"
+    "navigation_only": "只有机器人移动"
+  affordance:
+    "graspable": "可抓取"
+    "pushable": "可推动"
+    "pullable": "可拉动"
+    "pressable": "可按压"
+    "rotatable": "可旋转/拧动"
+    "pourable": "可作为倾倒源"
+    "receivable": "可接收液体/颗粒/物体"
+    "cuttable": "可切割"
+    "support_surface": "可作为支撑面"
+    "slidable": "可沿表面滑动"
+    "insertable": "可插入其他对象"
+    "insert_slot": "可被插入的孔/槽/接口"
+    "foldable": "可折叠"
+    "deformable": "可变形"
+    "shakeable": "可摇晃"
+    "strikeable": "可被敲击/盖章/拍打"
+    "throwable": "可抛掷"
+    "tool_usable": "可作为工具使用"
+    "hangable": "可悬挂"
+    "openable": "可打开"
+    "closable": "可关闭"
+    "wipeable": "可擦拭"
+    "scrubbable": "可刷洗"
+
+object_roles:
+  - id: main
+    display_name: 主要物体
+  - id: other
+    display_name: 其他可见物体
