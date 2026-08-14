@@ -18,7 +18,9 @@ def configure_qt_plugin_path() -> None:
 
 
 def ensure_macos_tool_path() -> None:
-    """GUI 启动的 app PATH 很短，补上 Homebrew 目录，否则找不到 ffmpeg/ffprobe。"""
+    """macOS GUI 启动的 app PATH 很短，补上 Homebrew 目录；其他平台无需处理。"""
+    if sys.platform != "darwin":
+        return
     current = os.environ.get("PATH", "")
     missing = [
         p
@@ -29,10 +31,20 @@ def ensure_macos_tool_path() -> None:
         os.environ["PATH"] = ":".join(missing + [current])
 
 
+def default_log_dir() -> Path:
+    """平台默认日志目录：macOS 用 ~/Library/Logs，Windows/Linux 用 %LOCALAPPDATA%（缺省回退 ~/.robolabel）。"""
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Logs" / "robolabel"
+    base = os.environ.get("LOCALAPPDATA")
+    if base:
+        return Path(base) / "robolabel"
+    return Path.home() / ".robolabel"
+
+
 def setup_logging() -> None:
     """windowed 模式下无终端，日志落盘便于排障；目录不可写时静默降级。"""
     try:
-        log_dir = Path.home() / "Library" / "Logs" / "robolabel"
+        log_dir = default_log_dir()
         log_dir.mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
             filename=log_dir / "robolabel.log",

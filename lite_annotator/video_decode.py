@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from collections import OrderedDict
 import shutil
 import subprocess
@@ -10,6 +11,15 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+
+
+def ffmpeg_install_hint() -> str:
+    """按平台返回 ffmpeg 安装命令提示。"""
+    if sys.platform == "darwin":
+        return "brew install ffmpeg"
+    if sys.platform == "win32":
+        return "winget install Gyan.FFmpeg"
+    return "sudo apt install ffmpeg"
 
 
 class VideoFrameReader:
@@ -132,7 +142,7 @@ def read_video_with_ffmpeg(path: Path) -> list[np.ndarray]:
         raise RuntimeError(
             f"Could not decode video: {path}. OpenCV could not read this codec, "
             "and ffmpeg/ffprobe is not available.\n"
-            "无法解码该视频：缺少 ffmpeg，请先安装（brew install ffmpeg）后重试。"
+            f"无法解码该视频：缺少 ffmpeg，请先安装（{ffmpeg_install_hint()}）后重试。"
         )
 
     width, height = probe_video_size(path)
