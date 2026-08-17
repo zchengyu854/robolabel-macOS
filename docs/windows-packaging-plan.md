@@ -351,3 +351,15 @@ robolabel/
 - **Wine 交叉构建成功**（2026-08-14）：本机无 Windows 环境，用 Gcenx 便携 Wine 11.15（Rosetta）+ Windows Python 3.12.10 embeddable 执行 `PyInstaller robolabel-win.spec`，产出 `dist/robolabel/`（234MB onedir）+ `dist/robolabel-windows.zip`（89MB）；`robolabel.exe` 为 PE32+ GUI x86-64，Wine 下启动冒烟 12s 存活（Qt GUI 事件循环正常）
 
 **待办（需 Windows 真机）**：双击冒烟全清单（§4.3）→ 无 Python 环境机器验证。注意：未签名 exe 首次运行 SmartScreen 需"更多信息 → 仍要运行"；ffmpeg 兜底需 `winget install Gyan.FFmpeg`。M3（ffmpeg 内嵌方案 B、README Windows 章节、正式图标）与 M4 未开始。
+
+### 9.1 追加：真机报错修复（2026-08-17）
+
+Windows 真机首次运行报 **`failed to load python dll`**，定位与修复：
+
+| # | 问题 | 根因 | 修复 |
+| --- | --- | --- | --- |
+| 1 | `failed to load python dll` | 首次用 **Python embeddable 精简版**交叉构建，PyInstaller 官方不支持该发行版，`python312.dll`/`python3.dll` 未被正确收集 | 改用**完整版 Windows Python 3.12.10**（Wine 下静默安装，`msiexec` 逐个装 core/lib/exe/dev/pip 五个 MSI 成功），重建后 `_internal/` 内含 `python312.dll` + `python3.dll` |
+| 2 | `UnicodeDecodeError: 'gbk' codec`（读 YAML 配置崩溃，中文 Windows 必现） | `common/skill_schema.py:148` 的 `open(path, "r")` 未指定编码，中文 Windows 默认 GBK，读 UTF-8 配置炸 | 改为 `open(path, "r", encoding="utf-8")`；全库排查后仅此一处裸 `open`（其余均已有 utf-8） |
+| 3 | `console=True` 残留 | 真机调试时临时开的控制台没改回 | 恢复 `robolabel-win.spec` 为 `console=False`，重建后 `file` 确认为 GUI 子系统 |
+
+**验证**：`pytest` 59 passed；Wine 下启动冒烟 15s 存活、0 traceback；产物 `dist/robolabel-windows.zip`（90MB）已更新。构建基础设施（Wine 11.15 + 完整 Python 3.12.10）保留在临时目录，后续可复用于再构建。

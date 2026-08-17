@@ -145,7 +145,7 @@ LEGACY_SUBJECT_MAP = {
 
 
 def load_yaml_file(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 

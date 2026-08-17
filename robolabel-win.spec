@@ -25,10 +25,11 @@ a = Analysis(
     ],
     hiddenimports=[
         "common.skill_schema",
+        "PyQt5.sip",
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(ROOT / "scripts" / "runtime_hook_windows.py")],
     excludes=[
         "torch",
         "sam2",

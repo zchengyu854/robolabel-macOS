@@ -13,7 +13,17 @@ from lite_annotator.ui_theme import apply_app_theme, scaled
 
 
 def configure_qt_plugin_path() -> None:
-    plugin_path = QLibraryInfo.location(QLibraryInfo.PluginsPath)
+    """设置Qt插件路径，PyInstaller打包后需要明确指定。"""
+    if getattr(sys, "frozen", False):
+        # 打包环境：从_MEIPASS读取插件
+        bundle_dir = sys._MEIPASS
+        plugin_path = os.path.join(bundle_dir, "PyQt5", "Qt5", "plugins")
+        if not os.path.exists(plugin_path):
+            plugin_path = os.path.join(bundle_dir, "PyQt5", "Qt", "plugins")
+        if not os.path.exists(plugin_path):
+            plugin_path = QLibraryInfo.location(QLibraryInfo.PluginsPath)
+    else:
+        plugin_path = QLibraryInfo.location(QLibraryInfo.PluginsPath)
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugin_path
 
 
